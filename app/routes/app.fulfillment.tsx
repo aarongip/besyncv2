@@ -196,9 +196,9 @@ function statusTone(
   fulfillmentStatus?: string | null,
 ): "success" | "attention" | "warning" | "info" {
   const s = String(fulfillmentStatus || "").toUpperCase();
-  if (s.includes("FULFILLED")) return "success";
-  if (s.includes("PARTIAL")) return "attention";
-  if (s.includes("UNFULFILLED")) return "warning";
+  if (s.startsWith("FULFILLED")) return "success";
+  if (s.startsWith("PARTIALLY_FULFILLED")) return "attention";
+  if (s.startsWith("UNFULFILLED")) return "warning";
   return "info";
 }
 
@@ -238,6 +238,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     );
 
     const json: any = await res.json();
+    console.log("ListOrders response:", JSON.stringify(json, null, 2));
 
     const orders: OrderListItem[] = (json?.data?.orders?.nodes || []).map(
       (o: any) => ({
@@ -288,7 +289,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
       const res = await admin.graphql(
         `#graphql
-        query OrderDetails($id: ID!) {
+        query f($id: ID!) {
           order(id: $id) {
             id
             name
@@ -1173,9 +1174,6 @@ export default function FulfillmentCenterPage() {
                             <Text as="span" fontWeight="semibold">
                               {o.name}
                             </Text>
-                            <Badge tone={statusTone(o.fulfillmentStatus)}>
-                              {String(o.fulfillmentStatus || "")}
-                            </Badge>
                           </InlineStack>
                         </IndexTable.Cell>
 
@@ -1183,7 +1181,9 @@ export default function FulfillmentCenterPage() {
                           {o.financialStatus || ""}
                         </IndexTable.Cell>
                         <IndexTable.Cell>
-                          {o.fulfillmentStatus || ""}
+                          <Badge tone={statusTone(o.fulfillmentStatus)}>
+                            {String(o.fulfillmentStatus || "")}
+                          </Badge>
                         </IndexTable.Cell>
                         <IndexTable.Cell>
                           {o.createdAt ? String(o.createdAt).slice(0, 10) : ""}
